@@ -4,22 +4,23 @@ import datetime
 import time
 import urllib.request
 import urllib.parse
+import difflib
 from urllib.error import HTTPError, URLError
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
 def verify_with_crossref(title, author):
     """
-    Crossref API를 사용하여 논문의 실존 여부를 교차 검증하고 공식 URL을 반환합니다.
+    Crossref API를 사용하여 논문을 검색하고, 제목 유사도가 80% 이상일 경우
+    실제 데이터베이스에 등록된 공식 제목, 저자, URL을 반환합니다.
     """
-    # 검색 쿼리 생성
-    query_str = f"{title} {author}"
-    encoded_query = urllib.parse.quote(query_str)
+    # title과 author를 분리하여 검색 정확도 향상
+    encoded_title = urllib.parse.quote(title)
+    encoded_author = urllib.parse.quote(author)
     
-    # Crossref API Endpoint (정확도를 높이기 위해 상위 1개 결과만 요청)
-    url = f"https://api.crossref.org/works?query={encoded_query}&select=title,URL,author&rows=1"
+    # 정확도 비교를 위해 상위 3개 결과를 가져옴
+    url = f"https://api.crossref.org/works?query.title={encoded_title}&query.author={encoded_author}&select=title,URL,author&rows=3"
     
-    # Crossref의 Polite Pool 사용 권장에 따라 User-Agent 설정 (github actions 환경에서 안정적)
     req = urllib.request.Request(
         url, 
         headers={'User-Agent': 'PaperBot/1.0 (mailto:github-actions@example.com)'}
@@ -33,19 +34,32 @@ def verify_with_crossref(title, author):
                 
                 if not items:
                     return None
+                
+                for item in items:
+                    found_title_list = item.get('title', [])
+                    if not found_title_list:
+                        continue
+                        
+                    found_title = found_title_list[0]
+                    found_url = item.get('URL', '')
                     
-                best_match = items[0]
-                found_title = best_match.get('title', [''])[0].lower()
-                
-                # 모델 생성 제목과 Crossref 검색 제목의 단어 교집합 비율 확인 (환각 방지)
-                query_words = set(title.lower().replace('-', ' ').split())
-                found_words = set(found_title.replace('-', ' ').split())
-                
-                if len(query_words) > 0:
-                    overlap_ratio = len(query_words.intersection(found_words)) / len(query_words)
-                    # 단어 일치율이 30% 이상인 경우 유효한 논문으로 간주
-                    if overlap_ratio >= 0.3:
-                        return best_match.get('URL')
+                    # 공식 저자명 추출 (첫 번째 저자의 성과 이름 결합)
+                    authors = item.get('author', [])
+                    found_author = ""
+                    if authors:
+                        family = authors[0].get('family', '')
+                        given = authors[0].get('given', '')
+                        found_author = f"{family}, {given}".strip(', ')
+                    
+                    # difflib을 이용한 정밀 문자열 유사도 검사 (80% 이상 일치 요구)
+                    similarity = difflib.SequenceMatcher(None, title.lower(), found_title.lower()).ratio()
+                    
+                    if similarity >= 0.80:
+                        return {
+                            "verified_title": found_title,
+                            "verified_author": found_author if found_author else author,
+                            "verified_url": found_url
+                        }
     except (HTTPError, URLError) as e:
         print(f"[Network/API Error] Crossref 연결 실패: {e}")
     except json.JSONDecodeError:
@@ -61,14 +75,12 @@ genai.configure(api_key=api_key)
 
 LOG_FILE = "papers_log.md"
 
-# 기존 리스트 읽기
 existing_papers = ""
 if os.path.exists(LOG_FILE):
     with open(LOG_FILE, "r", encoding="utf-8") as f:
         content = f.read()
         existing_papers = content[-1500:] if len(content) > 1500 else content
 
-# 프롬프트: 모델에게 URL 생성을 요구하지 않고 메타데이터의 정확성에 집중하도록 수정
 prompt = f"""
 Provide EXACTLY 2 semiconductor papers that ACTUALLY EXIST in academic databases. Do not hallucinate.
 1. A historically significant MOSFET device physics paper for deep theoretical understanding. (Set "category" as "[Historic]")
@@ -105,17 +117,21 @@ for attempt in range(max_retries):
             
         verified_papers = []
         
-        # Crossref API를 통한 교차 검증 수행
         for p in papers:
             title = p.get('title', '')
             author = p.get('author', '')
             
-            verified_url = verify_with_crossref(title, author)
+            # 교차 검증 실행
+            verification_result = verify_with_crossref(title, author)
             
-            if not verified_url:
-                raise ValueError(f"Crossref 검증 실패 (존재하지 않거나 제목이 불일치함): {title}")
+            if not verification_result:
+                raise ValueError(f"Crossref 검증 실패 (존재하지 않거나 정확도 미달): {title}")
             
-            p['url'] = verified_url
+            # LLM 생성 데이터를 공식 데이터로 완전 교체
+            p['title'] = verification_result['verified_title']
+            p['author'] = verification_result['verified_author']
+            p['url'] = verification_result['verified_url']
+            
             verified_papers.append(p)
                 
         success = True
@@ -141,7 +157,7 @@ for attempt in range(max_retries):
                 line = f"| {date_str} | {title} | {author} | {url_link} | {full_summary} |\n"
                 f.write(line)
                 
-        print("Successfully updated papers_log.md with Crossref-verified papers.")
+        print("Successfully updated papers_log.md with strictly verified papers.")
         break
 
     except ResourceExhausted:
