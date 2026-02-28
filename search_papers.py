@@ -31,7 +31,7 @@ Output STRICTLY in the following JSON array format, without any additional text:
 """
 
 # 지정된 모델 사용
-model = genai.GenerativeModel("gemini-3.1-pro-preview")
+model = genai.GenerativeModel("gemini-2.5-flash")
 response = model.generate_content(prompt)
 
 try:
@@ -62,4 +62,5 @@ try:
 
 except Exception as e:
     print(f"Error parsing or writing data: {e}")
+
     print(f"Raw response: {response.text}")
