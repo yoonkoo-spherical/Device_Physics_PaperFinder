@@ -5,15 +5,18 @@ on:
     - cron: '0 16 * * *' # 매일 UTC 16시 (한국 시간 오전 1시) 실행
   workflow_dispatch: # 필요시 수동으로 실행하기 위한 옵션
 
+permissions:
+  contents: write # 리포지토리에 git push 작업을 수행하기 위한 필수 권한
+
 jobs:
   run-script:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # v3에서 v4로 업데이트
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4에서 v5로 업데이트
         with:
           python-version: '3.10'
 
