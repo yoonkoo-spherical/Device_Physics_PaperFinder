@@ -11,7 +11,7 @@ import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
 def verify_with_crossref(title, author):
-encoded_title = urllib.parse.quote(title)
+    encoded_title = urllib.parse.quote(title)
     
     url = f"https://api.crossref.org/works?query.title={encoded_title}&select=title,URL,author&rows=5"
     
@@ -111,11 +111,12 @@ historic_topics, latest_topics = load_topics()
 
 model = genai.GenerativeModel("gemini-flash-latest")
 
-max_retries = 5 
+max_retries = 50 
 retry_delay_seconds = 40
 success = False
+attempt = 1
 
-for attempt in range(max_retries):
+while attempt <= max_retries:
     try:
         # 프롬프트 동적 생성 (선택된 랜덤 토픽 주입)
         prompt = f"""
@@ -198,20 +199,22 @@ for attempt in range(max_retries):
         break
 
     except ResourceExhausted:
-        print(f"API Quota Exceeded. Retrying in {retry_delay_seconds} seconds... (Attempt {attempt + 1}/{max_retries})")
+        print(f"API Quota Exceeded. Retrying in {retry_delay_seconds} seconds... (Attempt {attempt}/{max_retries})")
         time.sleep(retry_delay_seconds)
+        attempt += 1
     except ValueError as e:
-        print(f"Validation Error: {e}. Retrying... (Attempt {attempt + 1}/{max_retries})")
+        print(f"Validation Error: {e}. Retrying... (Attempt {attempt}/{max_retries})")
         time.sleep(5)
+        attempt += 1
     except json.JSONDecodeError as e:
-        print(f"JSON Parsing Error: {e}. Retrying... (Attempt {attempt + 1}/{max_retries})")
+        print(f"JSON Parsing Error: {e}. Retrying... (Attempt {attempt}/{max_retries})")
         time.sleep(5)
+        attempt += 1
     except Exception as e:
         print(f"Unexpected Error: {e}")
-        break
+        time.sleep(5)
+        attempt += 1
 
 if not success:
     import sys
     sys.exit(1)
-
-
