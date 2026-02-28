@@ -2,3 +2,5 @@
 |---|---|---|---|---|
 | 2026-02-28 | Ion implanted MOSFETs with very short channel lengths | Dennard, R.H. | [Link](https://doi.org/10.1109/iedm.1973.188672) | [Historic] MOSFET 소자의 크기를 축소함에 있어 성능과 전력 특성을 유지하기 위한 핵심적인 스케일링 이론(Dennard Scaling)을 정립하여 현대 반도체 미세화 공정의 이론적 토대를 제공한 논문입니다. |
 | 2026-02-28 | 3nm GAA Technology featuring Multi-Bridge-Channel FET for Low Power and High Performance Applications | Bae, Geumjong | [Link](https://doi.org/10.1109/iedm.2018.8614629) | [Latest] 기존 FinFET 구조의 물리적 한계를 극복하기 위해 나노시트(Nanosheet)를 적층한 MBCFET 구조를 3nm 공정에 도입하여, 전력 효율과 성능을 극대화하는 차세대 로직 공정 통합 기술을 다룹니다. |
+| 2026-02-28 | Surface States and Rectification at a Metal Semi-Conductor Contact | Bardeen, John | [Link](https://doi.org/10.1103/physrev.71.717) | [Historic] 반도체 표면 상태가 금속-반도체 접합부의 페르미 준위 고정(Fermi level pinning)에 미치는 영향을 최초로 이론적으로 규명하여, 현대 반도체 소자 물리학 및 MOSFET 접합부 이해의 기초를 확립한 논문입니다. |
+| 2026-02-28 | Ultralow contact resistance between semimetal and monolayer semiconductors | Shen, Pin-Chun | [Link](https://doi.org/10.1038/s41586-021-03472-9) | [Latest] 2차원 전이금속 디칼코게나이드(TMD) 채널 물질과 세미메탈 전극 사이의 접촉 저항을 획기적으로 낮추는 기술을 제안하여, 실리콘 한계를 극복할 차세대 초미세 로직 공정 통합의 핵심적인 난제를 해결한 연구입니다. |
