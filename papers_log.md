@@ -1,3 +1,1 @@
 
-| 2026-02-28 | Design of Ion-Implanted MOSFEPs with Very Small Physical Dimensions | DENNARD, ROBERT H. | [Link](https://doi.org/10.1142/9789814503464_0086) | [Historic] MOSFET 스케일링 이론의 기초를 정립한 논문으로, 소자의 크기를 줄이면서도 전기적 특성을 유지하기 위한 전압, 도핑 농도 및 물리적 치수 간의 비례 관계인 '데나드 스케일링 법칙'을 체계적으로 제시하였습니다. |
-| 2026-02-28 | 3nm GAA Technology featuring Multi-Bridge-Channel FET for Low Power and High Performance Applications | Bae, Geumjong | [Link](https://doi.org/10.1109/iedm.2018.8614629) | [Latest] 세계 최초로 양산된 3nm 공정의 GAA(Gate-All-Around) 구조인 MBCFET 기술에 관한 논문으로, 나노시트 적층 구조를 통해 기존 FinFET 대비 전력 효율을 높이고 채널 제어 능력을 극대화한 공정 통합 결과를 보여줍니다. |
