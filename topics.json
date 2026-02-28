@@ -1,0 +1,29 @@
+{
+  "historic_topics": [
+    "MOSFET scaling theory", 
+    "Carrier mobility in inversion layers", 
+    "High-k metal gate (HKMG) stacks development",
+    "Work function tuning in MOSFETs",
+    "Fermi level pinning",
+    "MOSFET channel current",
+    "Quantum mechanical effects in nanoscale devices",
+    "CMOS reliability (NBTI, HCI)",
+    "DIBL",
+    "Drain induced barrier lowering",
+    "short channel effect",
+    "threshold voltage modulation",
+    "self alignment"
+  ],
+  "latest_topics": [
+    "EUV lithography integration in DRAM",
+    "FinFET and 3D transistor architectures",
+    "GAA (Gate-All-Around) nanosheet FETs logic integration", 
+    "Dipole engineering using Lanthanum Oxide in DRAM",
+    "ALD vs PVD deposition for TiN thin films",
+    "SiGe formation in advanced nodes",
+    "Advanced packaging and 2.5D/3D ICs", 
+    "Novel channel materials for logic processes", 
+    "DRAM capacitor scaling and new dielectric materials",
+    "Backside power delivery networks (BSPDN)"
+  ]
+}
