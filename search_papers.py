@@ -5,20 +5,15 @@ import time
 import urllib.request
 import urllib.parse
 import difflib
+import random
 from urllib.error import HTTPError, URLError
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
 def verify_with_crossref(title, author):
-    """
-    Crossref API를 사용하여 논문을 검색하고, 제목 유사도가 80% 이상일 경우
-    실제 데이터베이스에 등록된 공식 제목, 저자, URL을 반환합니다.
-    """
-    # title과 author를 분리하여 검색 정확도 향상
     encoded_title = urllib.parse.quote(title)
     encoded_author = urllib.parse.quote(author)
     
-    # 정확도 비교를 위해 상위 3개 결과를 가져옴
     url = f"https://api.crossref.org/works?query.title={encoded_title}&query.author={encoded_author}&select=title,URL,author&rows=3"
     
     req = urllib.request.Request(
@@ -43,7 +38,6 @@ def verify_with_crossref(title, author):
                     found_title = found_title_list[0]
                     found_url = item.get('URL', '')
                     
-                    # 공식 저자명 추출 (첫 번째 저자의 성과 이름 결합)
                     authors = item.get('author', [])
                     found_author = ""
                     if authors:
@@ -51,7 +45,6 @@ def verify_with_crossref(title, author):
                         given = authors[0].get('given', '')
                         found_author = f"{family}, {given}".strip(', ')
                     
-                    # difflib을 이용한 정밀 문자열 유사도 검사 (80% 이상 일치 요구)
                     similarity = difflib.SequenceMatcher(None, title.lower(), found_title.lower()).ratio()
                     
                     if similarity >= 0.80:
@@ -69,30 +62,53 @@ def verify_with_crossref(title, author):
         
     return None
 
+def is_duplicate(new_title, existing_titles):
+    for ext_title in existing_titles:
+        if difflib.SequenceMatcher(None, new_title.lower(), ext_title.lower()).ratio() > 0.85:
+            return True
+    return False
+
+# 외부 토픽 파일 로드 함수
+def load_topics(file_path="topics.json"):
+    default_historic = ["MOSFET device physics general"]
+    default_latest = ["DRAM logic process integration general"]
+    
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                historic = data.get("historic_topics", default_historic)
+                latest = data.get("latest_topics", default_latest)
+                return historic, latest
+        except json.JSONDecodeError as e:
+            print(f"[File Error] topics.json 파싱 실패. 기본값을 사용합니다: {e}")
+            return default_historic, default_latest
+    else:
+        print(f"[File Info] {file_path} 파일이 없습니다. 기본값을 사용합니다.")
+        return default_historic, default_latest
+
 # API 설정
 api_key = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
 LOG_FILE = "papers_log.md"
 
-existing_papers = ""
+# 1. 기존에 등록된 논문 제목 추출 (중복 방지)
+existing_titles = set()
 if os.path.exists(LOG_FILE):
     with open(LOG_FILE, "r", encoding="utf-8") as f:
-        content = f.read()
-        existing_papers = content[-1500:] if len(content) > 1500 else content
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith("|") and not line.startswith("| Date") and not line.startswith("|---"):
+                parts = line.split("|")
+                if len(parts) >= 4:
+                    title = parts[2].strip()
+                    existing_titles.add(title)
 
-prompt = f"""
-Provide EXACTLY 2 semiconductor papers that ACTUALLY EXIST in academic databases. Do not hallucinate.
-1. A historically significant MOSFET device physics paper for deep theoretical understanding. (Set "category" as "[Historic]")
-2. A post-2020 high-industrial-impact DRAM or logic process integration paper. (Set "category" as "[Latest]")
+exclusion_list_text = "\n".join(f"- {t}" for t in existing_titles)
 
-Exclude any papers mentioned here: 
-{existing_papers}
-
-You MUST output a JSON array containing exactly 2 objects. 
-Keys required: "category", "title", "author", "summary_kr".
-Provide the exact official title and the first author's full name.
-"""
+# 2. 외부 JSON 파일에서 토픽 로드
+historic_topics, latest_topics = load_topics()
 
 model = genai.GenerativeModel("gemini-flash-latest")
 
@@ -102,10 +118,26 @@ success = False
 
 for attempt in range(max_retries):
     try:
+        # 프롬프트 동적 생성 (선택된 랜덤 토픽 주입)
+        prompt = f"""
+        Provide EXACTLY 2 semiconductor papers that ACTUALLY EXIST in academic databases. Do not hallucinate.
+        
+        CRITICAL INSTRUCTION: You MUST EXCLUDE any papers that match the following titles. Do not generate them:
+        {exclusion_list_text}
+        
+        1. A historically significant MOSFET device physics paper focusing on: {random.choice(historic_topics)}. (Set "category" as "[Historic]")
+        2. A post-2020 high-industrial-impact DRAM or logic process integration paper focusing on: {random.choice(latest_topics)}. (Set "category" as "[Latest]")
+
+        You MUST output a JSON array containing exactly 2 objects. 
+        Keys required: "category", "title", "author", "summary_kr".
+        Provide the exact official title and the first author's full name.
+        """
+
         response = model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
+                temperature=0.7 
             )
         )
         
@@ -121,14 +153,20 @@ for attempt in range(max_retries):
             title = p.get('title', '')
             author = p.get('author', '')
             
-            # 교차 검증 실행
+            if is_duplicate(title, existing_titles):
+                raise ValueError(f"중복 논문 생성 감지됨: {title}")
+            
             verification_result = verify_with_crossref(title, author)
             
             if not verification_result:
                 raise ValueError(f"Crossref 검증 실패 (존재하지 않거나 정확도 미달): {title}")
             
-            # LLM 생성 데이터를 공식 데이터로 완전 교체
-            p['title'] = verification_result['verified_title']
+            verified_title = verification_result['verified_title']
+            
+            if is_duplicate(verified_title, existing_titles):
+                raise ValueError(f"공식 제목 변환 후 중복 논문 감지됨: {verified_title}")
+            
+            p['title'] = verified_title
             p['author'] = verification_result['verified_author']
             p['url'] = verification_result['verified_url']
             
@@ -176,6 +214,3 @@ for attempt in range(max_retries):
 if not success:
     import sys
     sys.exit(1)
-
-
-
