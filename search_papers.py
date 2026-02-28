@@ -47,7 +47,7 @@ def verify_with_crossref(title, author):
                     
                     similarity = difflib.SequenceMatcher(None, title.lower(), found_title.lower()).ratio()
                     
-                    if similarity >= 0.80:
+                    if similarity >= 0.65:
                         return {
                             "verified_title": found_title,
                             "verified_author": found_author if found_author else author,
@@ -214,3 +214,4 @@ for attempt in range(max_retries):
 if not success:
     import sys
     sys.exit(1)
+
