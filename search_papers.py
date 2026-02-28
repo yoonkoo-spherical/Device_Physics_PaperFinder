@@ -31,7 +31,7 @@ You MUST output a JSON array containing exactly 2 objects.
 Keys required: "title", "author", "doi", "summary_kr".
 """
 
-model = genai.GenerativeModel("gemini-2.5-pro")
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 max_retries = 3
 retry_delay_seconds = 40
@@ -94,3 +94,4 @@ for attempt in range(max_retries):
 if not success:
     import sys
     sys.exit(1)
+
