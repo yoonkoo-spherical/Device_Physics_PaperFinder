@@ -1,0 +1,4 @@
+| Date | Title | 1st Author | DOI | Summary (KR) |
+|---|---|---|---|---|
+| 2026-02-28 | Design of ion-implanted MOSFET's with very small physical dimensions | R. H. Dennard | [10.1109/JSSC.1974.1050511](https://doi.org/10.1109/JSSC.1974.1050511) | MOSFET 소자 크기 축소 시 전압, 산화막 두께, 도핑 농도 등의 비례 축소 법칙(Dennard Scaling)을 제시하여 현대 소자 물리 이론의 근간이 된 논문입니다. |
+| 2026-02-28 | A 3D-stacked CMOS technology with bottom source/drain contact and self-aligned gate contact | A. Veloso | [10.1109/IEDM19573.2021.9720563](https://doi.org/10.1109/IEDM19573.2021.9720563) | 로직 소자의 스케일링 한계를 극복하기 위해 CFET(Complementary FET) 및 3D 적층 구조의 공정 집적 기술을 제시한 2021년 IEDM 발표 논문으로, 최신 소자 공정의 주요 방향성을 제시합니다. |
