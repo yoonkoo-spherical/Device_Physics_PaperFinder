@@ -18,17 +18,17 @@ if os.path.exists(LOG_FILE):
         content = f.read()
         existing_papers = content[-1500:] if len(content) > 1500 else content
 
-# 프롬프트 명확화: 정확히 2개의 객체를 요구
+# 프롬프트 수정: category 키 추가 및 [Historic], [Latest] 값 지정
 prompt = f"""
 Provide EXACTLY 2 semiconductor papers.
-1. A historically significant MOSFET device physics paper for deep theoretical understanding.
-2. A post-2020 high-industrial-impact DRAM or logic process integration paper.
+1. A historically significant MOSFET device physics paper for deep theoretical understanding. (Set "category" as "[Historic]")
+2. A post-2020 high-industrial-impact DRAM or logic process integration paper. (Set "category" as "[Latest]")
 
 Exclude any papers mentioned here: 
 {existing_papers}
 
 You MUST output a JSON array containing exactly 2 objects. 
-Keys required: "title", "author", "doi", "summary_kr".
+Keys required: "category", "title", "author", "doi", "summary_kr".
 """
 
 model = genai.GenerativeModel("gemini-2.5-flash")
@@ -50,7 +50,7 @@ for attempt in range(max_retries):
         text = response.text.strip()
         papers = json.loads(text)
         
-        # 반환된 논문 개수가 2개가 아니면 예외 발생 및 재시도
+        # 반환된 논문 개수 검증
         if len(papers) != 2:
             raise ValueError(f"Expected 2 papers, but got {len(papers)}.")
             
@@ -65,17 +65,21 @@ for attempt in range(max_retries):
             date_str = datetime.datetime.now().strftime("%Y-%m-%d")
             
             for p in papers:
+                category = p.get('category', '')
                 title = p.get('title', '')
                 author = p.get('author', '')
                 doi = p.get('doi', '')
                 summary = p.get('summary_kr', '')
                 
+                # 태그와 요약문 결합
+                full_summary = f"{category} {summary}".strip()
+                
                 doi_link = f"[{doi}](https://doi.org/{doi})" if not doi.startswith("http") else f"[Link]({doi})"
                 
-                line = f"| {date_str} | {title} | {author} | {doi_link} | {summary} |\n"
+                line = f"| {date_str} | {title} | {author} | {doi_link} | {full_summary} |\n"
                 f.write(line)
                 
-        print("Successfully updated papers_log.md with 2 papers.")
+        print("Successfully updated papers_log.md with 2 papers including tags.")
         break
 
     except ResourceExhausted:
@@ -94,4 +98,3 @@ for attempt in range(max_retries):
 if not success:
     import sys
     sys.exit(1)
-
