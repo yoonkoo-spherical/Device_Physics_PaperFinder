@@ -11,10 +11,9 @@ import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
 def verify_with_crossref(title, author):
-    encoded_title = urllib.parse.quote(title)
-    encoded_author = urllib.parse.quote(author)
+encoded_title = urllib.parse.quote(title)
     
-    url = f"https://api.crossref.org/works?query.title={encoded_title}&query.author={encoded_author}&select=title,URL,author&rows=3"
+    url = f"https://api.crossref.org/works?query.title={encoded_title}&select=title,URL,author&rows=5"
     
     req = urllib.request.Request(
         url, 
@@ -214,4 +213,5 @@ for attempt in range(max_retries):
 if not success:
     import sys
     sys.exit(1)
+
 
