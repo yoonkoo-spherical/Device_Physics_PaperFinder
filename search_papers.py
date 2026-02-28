@@ -94,7 +94,7 @@ Keys required: "category", "title", "author", "summary_kr".
 Provide the exact official title and the first author's full name.
 """
 
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-flash-latest")
 
 max_retries = 5 
 retry_delay_seconds = 40
@@ -176,5 +176,6 @@ for attempt in range(max_retries):
 if not success:
     import sys
     sys.exit(1)
+
 
 
