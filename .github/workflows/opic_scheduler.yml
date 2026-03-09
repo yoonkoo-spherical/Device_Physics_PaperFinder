@@ -1,0 +1,42 @@
+name: OPIc AL Daily Mailer
+
+on:
+  schedule:
+    # UTC 03:00은 KST(한국 시간) 12:00(정오)에 해당합니다.
+    - cron: '0 3 * * *'
+  workflow_dispatch: # 수동으로 즉시 실행하기 위한 옵션
+
+permissions:
+  contents: write # Markdown 파일 업데이트 후 Commit을 위한 권한
+
+jobs:
+  build-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run OPIc Generator Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python main.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add opic_study_log.md
+          # 파일에 변경사항이 있을 경우에만 커밋
+          git commit -m "docs: Daily OPIc study log update" || echo "No changes to commit"
+          git push
